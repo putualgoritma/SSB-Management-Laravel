@@ -56,6 +56,8 @@ Route::group(['prefix' => 'close', 'namespace' => 'Api\V1\Admin', 'middleware' =
     Route::post('absent/presence-process', 'LearningApiController@presenceProcess');
     Route::get('absent/bill/{sid}/{reg}/{ssid}', 'LearningApiController@bill');
     Route::post('absent/bill-process', 'LearningApiController@billProcess');
+    Route::get('absent/grades', 'LearningApiController@absentGrades');
+    Route::post('absent/grade-periodes','LearningApiController@absentGradePeriodes');
     Route::post('bills', 'LearningApiController@bills');
     Route::get('bills/paid/{id}/{period}', 'LearningApiController@paid');
     Route::post('bills/paid-process', 'LearningApiController@paidProcess');

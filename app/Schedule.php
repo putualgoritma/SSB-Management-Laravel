@@ -9,38 +9,39 @@ class Schedule extends Model
     protected $fillable = [
         'code',
         'register',
-        'periode',
         'semester_id',
-        'grade_id',
-        'periode_id',
+        'grade_periode_id',
+        'subject_id',
+        'end',
+        'start',
     ];
-    function grade(){
-        return $this->belongsTo('App\Grade');
+    function grade_periode(){
+        return $this->belongsTo(GradePeriode::class, 'grade_periode_id')->with('periode')->with('grade');
     }
-    public function absent(){
-        return $this->belongsToMany('App\Absent');
+    public function session(){
+        return $this->belongsToMany('App\Session');
     }
     function semester(){
         return $this->belongsTo('App\Semester');
     }
-    function periode(){
-        return $this->belongsTo('App\Periode');
+    function subject(){
+        return $this->belongsTo('App\Subject');
     }
 
-    public function subjects()
+    public function teachers()
     {
-        return $this->belongsToMany(Subject::class, 'schedule_subjects', 'schedule_id', 'subject_id')
+        return $this->belongsToMany(Teacher::class, 'schedule_teacher', 'schedule_id', 'teacher_id')
         ->withPivot([
-            'teacher_id','start','end',
+            'position',
             ]);
     }
 
-    public function scopeFilterPeriode($query)
+    public function scopeFilterSubject($query)
     {
-        if(request()->input('periode')!=""){
-            $periode = request()->input('periode'); 
+        if(request()->input('subject')!=""){
+            $subject = request()->input('subject'); 
 
-            return $query->where('periode_id', $periode);
+            return $query->where('subject_id', $subject);
         }else{
             return ;
         }
@@ -57,12 +58,12 @@ class Schedule extends Model
         }
     }
 
-    public function scopeFilterGrade($query)
+    public function scopeFilterGradePeriode($query)
     {
-        if(request()->input('grade')!=""){
-            $grade = request()->input('grade'); 
+        if(request()->input('grade_periode_id')!=""){
+            $grade_periode_id = request()->input('grade_periode_id'); 
 
-            return $query->where('grade_id', $grade);
+            return $query->where('grade_periode_id', $grade_periode_id);
         }else{
             return ;
         }

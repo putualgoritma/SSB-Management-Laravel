@@ -40,14 +40,19 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('schedules','SchedulesController');
     Route::get('schedules/createsubject','ScheduleController@createsubject');
     Route::get('schedule/grades','SchedulesController@grades')->name('schedules.grades');
+    Route::get('schedule/grade-periodes','SchedulesController@gradePeriodes')->name('schedules.gradePeriodes');
 
     Route::resource('absents','AbsentsController');
     Route::get('absent/schedule', 'AbsentsController@schedule')->name('absents.schedule');
-    Route::get('absent/list/{id}/{grade}', 'AbsentsController@index')->name('absents.list');
-    Route::get('absent/presence/{sid}/{reg}/{ssid}', 'AbsentsController@presence')->name('absents.presence');
+    Route::get('absent/list/{sid}', 'AbsentsController@index')->name('absents.list');
+    Route::get('absent/presence/{sgpid}/{reg}/{sid}', 'AbsentsController@presence')->name('absents.presence');
     Route::post('absent/presence-process', 'AbsentsController@presenceProcess')->name('absents.presenceprocess');
-    Route::get('absent/bill/{sid}/{reg}/{ssid}', 'AbsentsController@bill')->name('absents.bill');
+    Route::get('absent/bill/{sgpid}/{reg}/{sid}', 'AbsentsController@bill')->name('absents.bill');
     Route::post('absent/bill-process', 'AbsentsController@billProcess')->name('absents.billprocess');
+    Route::get('absent/grades','AbsentsController@grades')->name('absents.grades');
+    Route::get('absent/grade-periodes','AbsentsController@gradePeriodes')->name('absents.gradePeriodes');
+    Route::get('absent/sessions-create','AbsentsController@sessionsCreate')->name('absents.sessionsCreate');
+    Route::post('absent/sessions-store','AbsentsController@sessionsStore')->name('absents.sessionsStore');
 
     Route::delete('bills/destroy', 'TestsController@massDestroy')->name('bills.massDestroy');
     Route::resource('bills','BillsController');

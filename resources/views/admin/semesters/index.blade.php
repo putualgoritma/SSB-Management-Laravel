@@ -29,6 +29,9 @@
                             {{ trans('global.semester.fields.name') }}
                         </th>
                         <th>
+                            {{ trans('global.semester.fields.status') }}
+                        </th>
+                        <th>
                             &nbsp;
                         </th>
                     </tr>
@@ -44,6 +47,11 @@
                             </td>
                             <td>
                             {{ $semester->name ?? '' }}
+                            </td>
+                            <td>
+                            @if($semester->status=='active')
+                            <button type="button" class="btn btn-primary btn-sm" disabled>Active</button>
+                            @endif
                             </td>
                             <td>
                                 @can('semester_show')

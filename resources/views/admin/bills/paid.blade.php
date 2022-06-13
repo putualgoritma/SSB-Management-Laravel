@@ -19,12 +19,12 @@
                     </em>
                 @endif
             </div>
-            <div class="form-group {{ $errors->has('student_id') ? 'has-error' : '' }}">
-                <label for="student_id">{{ trans('global.bill.fields.student_id') }}*</label>
-                <input type="text" id="student_id_off" name="student_id_off" class="form-control" readonly value="{{ old('student_id', isset($student) ? $student->name : '') }}">
-                @if($errors->has('student_id'))
+            <div class="form-group {{ $errors->has('student_grade_periode_id') ? 'has-error' : '' }}">
+                <label for="student_grade_periode_id">{{ trans('global.student.fields.name') }}*</label>
+                <input type="text" id="student_grade_periode_id" name="student_grade_periode_id" class="form-control" readonly value="{{ old('student_grade_periode_id', isset($student_grade_periode->students) ? $student_grade_periode->students->name : '') }}">
+                @if($errors->has('student_grade_periode_id'))
                     <em class="invalid-feedback">
-                        {{ $errors->first('student_id') }}
+                        {{ $errors->first('student_grade_periode_id') }}
                     </em>
                 @endif
             </div>
@@ -71,7 +71,7 @@
                 <p class="helper-block">
                     {{ trans('global.bill.fields.status_helper') }}
                 </p>
-                <input type="hidden" id="student_id" name="student_id" value="{{ $student->id }}">
+                <input type="hidden" id="student_grade_periode_id" name="student_grade_periode_id" value="{{ $student_grade_periode->id }}">
                 <input type="hidden" id="periode" name="periode" value="{{ $periode }}">
             </div>
 

@@ -39,4 +39,13 @@ class GradePeriode extends Model
             return ;
         }
     }
+
+    public function scopeFilterGrade($query, $grade)
+    {
+        if($grade!=""){
+            return $query->where('grade_id', $grade);
+        }else{
+            return ;
+        }
+    }
 }

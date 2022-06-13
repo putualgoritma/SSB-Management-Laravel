@@ -28,6 +28,20 @@
                     </em>
                 @endif
             </div>
+
+            <div class="form-group {{ $errors->has('status') ? 'has-error' : '' }}">
+                <label for="status">{{ trans('global.semester.fields.status') }}*</label>
+                <select id="status" name="status" class="form-control" value="{{ old('status', isset($semester) ? $semester->status : '') }}">
+                    <option value="active" {{$semester->status == 'active' ? 'selected' : ''}}>Active</option>
+                    <option value="close" {{$semester->status == 'close' ? 'selected' : ''}}>Non Active</option>
+                </select>
+                @if($errors->has('status'))
+                    <em class="invalid-feedback">
+                        {{ $errors->first('status') }}
+                    </em>
+                @endif
+            </div>
+
             <div>
                 <input class="btn btn-danger" type="submit" value="{{ trans('global.save') }}">
             </div>

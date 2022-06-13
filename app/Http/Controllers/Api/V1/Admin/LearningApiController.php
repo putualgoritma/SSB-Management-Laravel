@@ -4,16 +4,104 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Absent;
 use App\Bill;
+use App\GradePeriode;
 use App\Http\Controllers\Controller;
 use App\Schedule;
 use App\Schedule_subject;
+use App\School;
 use App\Student;
 use App\Subject;
+use App\Session;
+use App\Semester;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class LearningApiController extends Controller
 {
+
+    public function absentGradePeriodes(Request $request)
+    {
+        $register_sessi = $request->registersessi;
+        $register = $request->register;
+        $datas = Schedule::selectRaw("schedules.*,sessions.id as session_id")
+            ->leftJoinSub(Session::selectRaw('*')
+                    ->where(function ($query) use ($register_sessi) {
+                        if ($register_sessi != "") {
+                            $query->where('sessions.register', '=', $register_sessi);
+                        }
+                    }),
+                'sessions',
+                function ($join) {
+                    $join->on('schedules.id', '=', 'sessions.schedule_id');
+                }
+            )
+            ->where(function ($query) use ($register) {
+                if ($register != "") {
+                    $query->where('schedules.register', '=', $register);
+                }
+            })
+            ->with('grade_periode')
+            ->with('semester')
+            ->with('subject')
+            ->with('teachers')
+            ->FilterSubject()
+            ->FilterSemester()
+            ->FilterGradePeriode()
+            ->get();
+        $semesters = Semester::all();
+        $gradeperiodes = GradePeriode::where('id', $request->grade_periode_id)
+            ->with('grade')
+            ->with('periode')
+            ->first();
+
+        //Check if datas found or not.
+        if (is_null($datas)) {
+            $message = 'Data not found.';
+            $status = false;
+            return response()->json([
+                'success' => $status,
+                'message' => $message,
+                'data' => $datas,
+            ]);
+        }
+        $message = 'Data retrieved successfully.';
+        $status = true;
+
+        //Call function for response data
+        return response()->json([
+            'success' => $status,
+            'message' => $message,
+            'data' => $datas,
+        ]);
+    }
+
+    public function absentGrades()
+    {
+        $school = School::first();
+        $datas = GradePeriode::where('periode_id', $school->periode_active)
+            ->with('grade')
+            ->with('periode')
+            ->get();
+        //Check if datas found or not.
+        if (is_null($datas)) {
+            $message = 'Data not found.';
+            $status = false;
+            return response()->json([
+                'success' => $status,
+                'message' => $message,
+                'data' => $datas,
+            ]);
+        }
+        $message = 'Data retrieved successfully.';
+        $status = true;
+
+        //Call function for response data
+        return response()->json([
+            'success' => $status,
+            'message' => $message,
+            'data' => $datas,
+        ]);
+    }
 
     public function scheduleshow($id)
     {
@@ -210,7 +298,7 @@ class LearningApiController extends Controller
         if (empty($absent)) {
             //create
             $data = ['register' => $request->input('register'), 'student_id' => $request->input('student_id_hidden'), 'schedule_subject_id' => $request->input('schedule_subject_id_hidden'), 'presence' => 'alpha', 'bill' => $request->input('bill'), 'amount' => $request->input('amount')];
-            
+
             try {
                 $absent = Absent::create($data);
                 $absent->grade_id = $schedule->grade_id;
@@ -227,7 +315,7 @@ class LearningApiController extends Controller
         } else {
             //update
             $absent->bill = $request->input('bill');
-            $absent->amount = $request->input('amount');            
+            $absent->amount = $request->input('amount');
             try {
                 $absent->save();
                 $absent->grade_id = $schedule->grade_id;
@@ -290,7 +378,7 @@ class LearningApiController extends Controller
         if (empty($absent)) {
             //create
             $data = ['register' => $request->input('register'), 'student_id' => $request->input('student_id_hidden'), 'schedule_subject_id' => $request->input('schedule_subject_id_hidden'), 'presence' => $request->input('presence'), 'description' => $request->input('description'), 'bill' => 'unpaid', 'amount' => 0];
-            
+
             try {
                 $absent = Absent::create($data);
                 $absent->grade_id = $schedule->grade_id;
@@ -308,7 +396,7 @@ class LearningApiController extends Controller
         } else {
             //update
             $absent->presence = $request->input('presence');
-            $absent->description = $request->input('description');            
+            $absent->description = $request->input('description');
             try {
                 $absent->save();
                 $absent->grade_id = $schedule->grade_id;

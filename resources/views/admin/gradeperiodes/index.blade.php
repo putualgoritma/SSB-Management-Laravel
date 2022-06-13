@@ -2,8 +2,8 @@
 @section('content')
 @can('gradeperiode_create')
     <div style="margin-bottom: 10px;" class="row">
-        <div class="col-lg-12">
-            <a class="btn btn-success" href="{{ route("admin.gradeperiodes.create") }}">
+        <div class="col-lg-12">            
+            <a class="btn btn-success" href="{{ route('admin.gradeperiodes.create', ['periode'=>$periode!=null ? $periode->id : 0]) }}">
                 {{ trans('global.add') }} {{ trans('global.gradeperiode.title_singular') }}
             </a>
         </div>
@@ -13,7 +13,7 @@
 <div class="card">
 
     <div class="card-header">
-        {{ trans('global.gradeperiode.title_singular') }} {{ trans('global.list') }}
+        {{ trans('global.gradeperiode.title_singular') }} {{ trans('global.list') }} @if($periode!=null)(Periode: {{ $periode->name }})@endif
     </div>
 
     <div class="card-body">

@@ -17,4 +17,9 @@ class StudentGradePeriode extends Model
     {
         return $this->belongsTo(Student::class, 'student_id')->select('id', 'code', 'name');
     }
+
+    function grade_periode(){
+        return $this->belongsTo(GradePeriode::class, 'grade_periode_id')->with('periode')->with('grade');
+    }
+    
 }

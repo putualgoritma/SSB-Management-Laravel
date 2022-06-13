@@ -3,7 +3,7 @@
 
 <div class="card">
     <div class="card-header">
-        {{ trans('global.create') }} {{ trans('global.gradeperiode.title_singular') }}
+        {{ trans('global.create') }} {{ trans('global.gradeperiode.title_singular') }}  @if($periode!=null)(Periode: {{ $periode->name }})@endif
     </div>
 
     <div class="card-body">
@@ -28,8 +28,8 @@
                 <label for="periode">{{ trans('global.gradeperiode.fields.periode_id') }}*</label>
                 <select id="periode_id" name="periode_id" class="form-control" value="{{ old('periode_id', isset($gradeperiode) ? $gradeperiode->periode_id : '') }}">
                 <option value="0">--Pilih Periode--</option>
-                @foreach($periodes as $periode)
-                <option value="{{$periode->id}}">{{ $periode->name}}</option>
+                @foreach($periodes as $periode_opt)
+                <option value="{{$periode_opt->id}}" {{($periode!=null && $periode->id == $periode_opt->id) ? 'selected' : ''}}>{{ $periode_opt->name}}</option>
                 @endforeach
                  </select>
                 </select>
@@ -38,6 +38,7 @@
                         {{ $errors->first('periode_id') }}
                     </em>
                 @endif
+                <input type="hidden" id="periode" name="periode" value="{{ $periode!=null ? $periode->id : 0 }}">
             </div>
             <div>
                 <input class="btn btn-danger" type="submit" value="{{ trans('global.save') }}">

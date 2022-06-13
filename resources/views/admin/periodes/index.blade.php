@@ -32,6 +32,9 @@
                             {{ trans('global.periode.fields.periode') }}
                         </th>
                         <th>
+                            {{ trans('global.periode.fields.status') }}
+                        </th>
+                        <th>
                             &nbsp;
                         </th>
                     </tr>
@@ -50,6 +53,11 @@
                             </td>
                             <td>
                             {{ $periode->periode ?? '' }}
+                            </td>
+                            <td>
+                            @if($periode->status=='active')
+                            <button type="button" class="btn btn-primary btn-sm" disabled>Active</button>
+                            @endif
                             </td>
                             <td>
                                 @can('periode_show')

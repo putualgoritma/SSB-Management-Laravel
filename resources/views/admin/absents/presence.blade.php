@@ -18,21 +18,21 @@
                     </em>
                 @endif
             </div>
-            <div class="form-group {{ $errors->has('schedule_subject_id') ? 'has-error' : '' }}">
-                <label for="schedule_subject_id">{{ trans('global.absent.fields.schedule_subject_id') }}*</label>
-                <input type="text" id="schedule_subject_id" name="schedule_subject_id" class="form-control" readonly value="{{ old('schedule_subject_id', isset($absent) ? $absent->schedulesubject->subjects->name : '') }}">
-                @if($errors->has('schedule_subject_id'))
+            <div class="form-group {{ $errors->has('session_id') ? 'has-error' : '' }}">
+                <label for="session_id">{{ trans('global.subject.fields.name') }}*</label>
+                <input type="text" id="session_id" name="session_id" class="form-control" readonly value="{{ old('session_id', isset($absent) ? $absent->sessions->schedules->subject->name : '') }}">
+                @if($errors->has('session_id'))
                     <em class="invalid-feedback">
-                        {{ $errors->first('schedule_subject_id') }}
+                        {{ $errors->first('session_id') }}
                     </em>
                 @endif
             </div>
-            <div class="form-group {{ $errors->has('student_id') ? 'has-error' : '' }}">
-                <label for="student_id">{{ trans('global.absent.fields.student_id') }}*</label>
-                <input type="text" id="student_id" name="student_id" class="form-control" readonly value="{{ old('student_id', isset($absent) ? $absent->student->name : '') }}">
-                @if($errors->has('student_id'))
+            <div class="form-group {{ $errors->has('student_grade_periode_id') ? 'has-error' : '' }}">
+                <label for="student_grade_periode_id">{{ trans('global.student.fields.name') }}*</label>
+                <input type="text" id="student_grade_periode_id" name="student_grade_periode_id" class="form-control" readonly value="{{ old('student_grade_periode_id', isset($absent) ? $absent->studentgradeperiodes->students->name : '') }}">
+                @if($errors->has('student_grade_periode_id'))
                     <em class="invalid-feedback">
-                        {{ $errors->first('student_id') }}
+                        {{ $errors->first('student_grade_periode_id') }}
                     </em>
                 @endif
             </div>
@@ -59,8 +59,8 @@
                         {{ $errors->first('description') }}
                     </em>
                 @endif
-                <input type="hidden" id="student_id_hidden" name="student_id_hidden" value="{{ $absent->student_id }}">
-                <input type="hidden" id="schedule_subject_id_hidden" name="schedule_subject_id_hidden" value="{{ $absent->schedule_subject_id }}">
+                <input type="hidden" id="student_grade_periode_id_hidden" name="student_grade_periode_id_hidden" value="{{ $absent->student_grade_periode_id }}">
+                <input type="hidden" id="session_id_hidden" name="session_id_hidden" value="{{ $absent->session_id }}">
             </div>
             
             <div>

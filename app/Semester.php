@@ -11,6 +11,7 @@ class semester extends Model
     protected $fillable = [
         'code',
         'name',
+        'status',
     ];
     public function schedule(){
     	return $this->hasMany('App\Tag');

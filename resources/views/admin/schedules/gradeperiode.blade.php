@@ -1,8 +1,17 @@
 @extends('layouts.admin')
 @section('content')
+@can('student_create')
+    <div style="margin-bottom: 10px;" class="row">
+        <div class="col-lg-12">
+            <a class="btn btn-success" href="{{ route("admin.schedules.create",["grade_periode_id"=>$request->grade_periode_id,"register"=>$request->register,"semester"=>$request->semester]) }}">
+                {{ trans('global.add') }} {{ trans('global.schedule.title_singular') }}
+            </a>
+        </div>
+    </div>
+@endcan
 <div class="card">
     <div class="card-header">
-        {{ trans('global.absent.title_singular') }} {{ trans('global.list') }}
+        {{ trans('global.schedule.title_singular') }} {{ trans('global.list') }} ({{ $gradeperiodes->grade->name }} - {{  $gradeperiodes->periode->name }})
     </div>
 
     <div class="card-body">
@@ -10,19 +19,28 @@
          <div class="col-md-6">
              <form action="" id="filtersForm">
                 <div class="input-group">
-                    <input type="date" id="register" name="register" class="form-control"> 
+                    <select id="semester" name="semester" class="form-control">
+                    <option value="">== Semua Semester ==</option>
+                    @foreach($semesters as $semester)
+                    <option value="{{$semester->id}}">{{ $semester->name}}</option>
+                    @endforeach
+                    </select>
                 </div>
                 <div class="input-group">
                 &nbsp;
                 </div>
                 <div class="input-group">
-                    <select id="presence" name="presence" class="form-control">
-                    <option value="">== Semua Status ==</option>
-                    <option value="masuk">Masuk</option>
-                    <option value="ijin">Ijin</option>
-                    <option value="sakit">Sakit</option>
-                    <option value="alpha">Alpha</option>
+                    <select id="register" name="register" class="form-control">
+                    <option value="">== Semua Hari ==</option>
+                    <option value="Sunday">Minggu</option>
+                    <option value="Monday">Senin</option>
+                    <option value="Tuesday">Selasa</option>
+                    <option value="Wednesday">Rabu</option>
+                    <option value="Thursday">Kamis</option>
+                    <option value="Friday">Jumat</option>
+                    <option value="Saturday">Sabtu</option>
                     </select>
+                    <input type="hidden" id="grade_periode_id" name="grade_periode_id" value="{{ $request->grade_periode_id }}">                    
                     <span class="input-group-btn">
                     &nbsp;&nbsp;<input type="submit" class="btn btn-primary" value="Filter">
                     </span> 
@@ -31,7 +49,7 @@
              </div> 
         </div>
         <div class="table-responsive">
-            <table class=" table table-bordered table-striped table-hover datatable ajaxTable datatable-absents">
+            <table class=" table table-bordered table-striped table-hover datatable ajaxTable datatable-schedules">
                 <thead>
                     <tr>
                         <th width="10">
@@ -41,29 +59,25 @@
                             No.
                         </th>
                         <th>
-                            {{ trans('global.absent.fields.code') }}
+                            {{ trans('global.schedule.fields.code') }}
                         </th>
                         <th>
-                            {{ trans('global.absent.fields.register') }}
+                            {{ trans('global.schedule.fields.periode_id') }}
                         </th>
                         <th>
-                            {{ trans('global.absent.fields.student_id') }}
+                            {{ trans('global.schedule.fields.semester_id') }}
+                        </th>                        
+                        <th>
+                            {{ trans('global.schedule.fields.grade_id') }}
                         </th>
                         <th>
-                            {{ trans('global.absent.fields.description') }}
-                        </th>
-                        <th>
-                            {{ trans('global.absent.fields.presence') }}
-                        </th>
-                        <th>
-                            {{ trans('global.absent.fields.amount') }}
+                            {{ trans('global.schedule.fields.register') }}
                         </th>
                         <th>
                             &nbsp;
                         </th>
                     </tr>
                 </thead>
-                
                 
             </table>
         </div>
@@ -73,24 +87,30 @@
 @parent
 <script>
     $(function () {
-  let deleteButtonTrans = '{{ trans('global.datatables.delete') }}'
-
   let searchParams = new URLSearchParams(window.location.search)
-  let presence = searchParams.get('presence')
+  let grade_periode_id = searchParams.get('grade_periode_id')
+  let semester = searchParams.get('semester')
   let register = searchParams.get('register')
 
-  if (presence) {
-    $("#presence").val(presence);
+  //alert(grade_periode_id);
+
+  if (grade_periode_id) {
+    $("#grade_periode_id").val(grade_periode_id);
   }else{
-    $("#presence").val('');
+    $("#grade_periode_id").val('');
+  } 
+  if (semester) {
+    $("#semester").val(semester);
+  }else{
+    $("#semester").val('');
   } 
   if (register) {
     $("#register").val(register);
   }else{
-    let Ym = moment().format("YYYY-MM-DD");
-    $("#register").val(Ym);
+    $("#register").val('');
   }
 
+  let deleteButtonTrans = '{{ trans('global.datatables.delete') }}'
   let deleteButton = {
     text: deleteButtonTrans,
     url: "{{ route('admin.users.massDestroy') }}",
@@ -128,11 +148,13 @@
     processing: true,
     serverSide: true,
     retrieve: true,
+    paging: true,
     aaSorting: [],
     ajax: {
-      url: "{{ route('admin.absents.list',$sid) }}",
+      url: "{{ route('admin.schedules.gradePeriodes') }}",
       data: {
-        'presence': $("#presence").val(),
+        'grade_periode_id': $("#grade_periode_id").val(),
+        'semester': $("#semester").val(),
         'register': $("#register").val(),
       }
     },
@@ -140,18 +162,17 @@
         { data: 'placeholder', name: 'placeholder' },
         { data: 'DT_RowIndex', name: 'no' },
         { data: 'code', name: 'code' },
+        { data: 'periode', name: 'periode' },
+        { data: 'semester', name: 'semester' },
+        { data: 'grade', name: 'grade' },        
         { data: 'register', name: 'register' },
-        { data: 'name', name: 'name' },        
-        { data: 'description', name: 'description' },
-        { data: 'presence', name: 'presence' },
-        { data: 'amount', name: 'amount' },
         { data: 'actions', name: '{{ trans('global.actions') }}' }
     ],
-    order: [[ 1, 'asc' ]],
     pageLength: 100,
+    "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
   };
 
-  $('.datatable-absents').DataTable(dtOverrideGlobals);
+  $('.datatable-schedules').DataTable(dtOverrideGlobals);
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e){
         $($.fn.dataTable.tables(true)).DataTable()
             .columns.adjust();

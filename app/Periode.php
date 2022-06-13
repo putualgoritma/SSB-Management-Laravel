@@ -10,6 +10,7 @@ class periode extends Model
         'code',
         'name',
         'periode',
+        'status',
     ];
     public function schedule(){
     	return $this->hasMany('App\Tag');

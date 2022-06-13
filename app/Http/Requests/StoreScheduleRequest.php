@@ -33,10 +33,10 @@ class StoreScheduleRequest extends FormRequest
             'semester_id' => [
                 'required',
             ],
-            'periode_id' => [
+            'grade_periode_id' => [
                 'required',
             ],
-            'grade_id' => [
+            'register' => [
                 'required',
             ],
             

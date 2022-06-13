@@ -83,6 +83,9 @@ class SemestersController extends Controller
     {
         abort_unless(\Gate::allows('semester_edit'), 403);
         $semester->update($request->all());
+        if ($request->status == 'active') {
+            Semester::where('id','!=', $semester->id)->update(['status' => 'close']);
+        }
         return redirect()->route('admin.semesters.index');
     }
 

@@ -1,5 +1,5 @@
 <div class="sidebar">
-    <nav class="sidebar-nav ps ps--active-y">
+    <nav class="sidebar-nav">
 
         <ul class="nav">
             <li class="nav-item">
@@ -20,7 +20,7 @@
                 <ul class="nav-dropdown-items">               
                     
                     <li class="nav-item">
-                        <a href="{{ route("admin.absents.schedule") }}" class="nav-link {{ request()->is('admin/absents') || request()->is('admin/absents/*') ? 'active' : '' }}">
+                        <a href="{{ route("admin.absents.grades") }}" class="nav-link {{ request()->is('admin/absents') || request()->is('admin/absents/*') ? 'active' : '' }}">
                             <i class="fas fa-address-book nav-icon">
 
                             </i>

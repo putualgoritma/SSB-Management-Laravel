@@ -12,19 +12,9 @@ class Bill extends Model
         'register',
         'amount',
         'status',
-        'student_id',
+        'student_grade_periode_id',
     ];
-    public function student(){
-        return $this->belongsTo('App\Student');
-    }
-    public function scopeFilterGrade($query)
-    {
-        if(request()->input('grade')!=""){
-            $grade = request()->input('grade'); 
-
-            return $query->where('grade_id', $grade);
-        }else{
-            return ;
-        }
+    public function studentgradeperiodes(){
+        return $this->belongsTo(StudentGradePeriode::class, 'student_grade_periode_id')->with('students')->select('id','student_id');
     }
 }

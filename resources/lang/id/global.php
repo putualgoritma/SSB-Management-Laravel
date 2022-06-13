@@ -440,6 +440,9 @@ return [
             'periode_id' => 'Periode',
             'semester_id' => 'Semester',
             'grade_id' => 'Kelas',
+            'subject_id' => 'Mata Pelajaran',
+            'start' => 'Mulai',
+            'end' => 'Berakhir',
         ],
     ],
     'absent' =>[
@@ -494,6 +497,7 @@ return [
             'id' => 'ID',
             'code' => 'Kode',
             'name' => 'Semester',
+            'status' => 'Status',
         ],
     ],
     'periode' =>[
@@ -504,6 +508,7 @@ return [
             'code' => 'Kode',
             'name' => 'Nama',
             'periode' => 'Periode',
+            'status' => 'Status',
         ],
     ],
     'team' =>[
@@ -522,6 +527,14 @@ return [
             'id' => 'ID',
             'periode_id' => 'Periode',
             'grade_id' => 'Kelas',
+        ],
+    ],
+    'session' =>[
+        'title' => 'Sessi',
+        'title_singular' => 'Sessi',
+        'fields' => [
+            'id' => 'ID',
+            'register' => 'Register',
         ],
     ],
 ];

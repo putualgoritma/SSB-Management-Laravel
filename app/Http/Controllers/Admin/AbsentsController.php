@@ -4,18 +4,175 @@ namespace App\Http\Controllers\Admin;
 
 use App\Absent;
 use App\Grade;
+use App\GradePeriode;
 use App\Http\Controllers\Controller;
 use App\Periode;
 use App\Schedule;
 use App\Schedule_subject;
+use App\School;
 use App\Semester;
+use App\Session;
 use App\Student;
+use App\StudentGradePeriode;
 use App\Subject;
+use App\Teacher;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
 class AbsentsController extends Controller
 {
+
+    public function sessionsCreate(Request $request)
+    {
+        abort_unless(\Gate::allows('absent_create'), 403);
+        $teachers = Teacher::all();
+
+        return view('admin.absents.sessionscreate', compact('teachers', 'request'));
+    }
+
+    public function sessionsStore(Request $request)
+    {
+        abort_unless(\Gate::allows('absent_create'), 403);
+        //create
+        $session = Session::create($request->all());
+        //get input arr
+        $teachers = $request->input('teachers', []);
+        $positions = $request->input('positions', []);
+        //attach into tbl session_teacher
+        foreach ($teachers as $key => $value) {
+            $session->teachers()->attach($value, ['position' => $positions[$key]]);
+        }
+
+        return redirect()->route('admin.absents.gradePeriodes', ['grade_periode_id' => $request->input('grade_periode_id')]);
+    }
+
+    public function gradePeriodes(Request $request)
+    {
+        abort_unless(\Gate::allows('absent_access'), 403);
+
+        $register_sessi = $request->registersessi;
+        $register = $request->register;
+        if ($request->ajax()) {
+            $grade_periode_id = $request->grade_periode_id;
+            //set query
+            $qry = Schedule::selectRaw("schedules.*,sessions.id as session_id")
+                ->leftJoinSub(Session::selectRaw('*')
+                        ->where(function ($query) use ($register_sessi) {
+                            if ($register_sessi != "") {
+                                $query->where('sessions.register', '=', $register_sessi);
+                            }
+                        }),
+                    'sessions',
+                    function ($join) {
+                        $join->on('schedules.id', '=', 'sessions.schedule_id');
+                    }
+                )
+                ->where(function ($query) use ($register) {
+                    if ($register != "") {
+                        $query->where('schedules.register', '=', $register);
+                    }
+                })
+                ->with('grade_periode')
+                ->with('semester')
+                ->with('subject')
+                ->FilterSubject()
+                ->FilterSemester()
+                ->FilterGradePeriode()
+                ->get();
+            $table = Datatables::of($qry);
+
+            $table->addColumn('placeholder', '&nbsp;');
+            $table->addColumn('actions', '&nbsp;');
+
+            $table->editColumn('actions', function ($row) use ($grade_periode_id) {
+                $viewGate = 'absent_show';
+                $editGate = 'absent_edit';
+                $deleteGate = 'absent_delete';
+                $crudRoutePart = 'absents';
+                $grade_periode_id = $grade_periode_id;
+
+                return view('partials.absentGradePeriodes', compact(
+                    'viewGate',
+                    'editGate',
+                    'deleteGate',
+                    'crudRoutePart',
+                    'row',
+                    'grade_periode_id'
+                ));
+            });
+            $table->editColumn('code', function ($row) {
+                return $row->code ? $row->code : "";
+            });
+
+            $table->editColumn('periode', function ($row) {
+                return $row->grade_periode->periode->name ? $row->grade_periode->periode->name : "";
+            });
+
+            $table->editColumn('semester', function ($row) {
+                return $row->semester->name ? $row->semester->name : "";
+            });
+
+            $table->editColumn('grade', function ($row) {
+                return $row->grade_periode->grade->name ? $row->grade_periode->grade->name : "";
+            });
+
+            $table->editColumn('register', function ($row) {
+                return $row->register ? $row->register : "";
+            });
+
+            $table->rawColumns(['actions', 'placeholder']);
+
+            $table->addIndexColumn();
+            return $table->make(true);
+        }
+        //default view
+        $schedules = Schedule::selectRaw("schedules.*,sessions.id as session_id")
+            ->leftJoinSub(Session::selectRaw('*')
+                    ->where(function ($query) use ($register_sessi) {
+                        if ($register_sessi != "") {
+                            $query->where('sessions.register', '=', $register_sessi);
+                        }
+                    }),
+                'sessions',
+                function ($join) {
+                    $join->on('schedules.id', '=', 'sessions.schedule_id');
+                }
+            )
+            ->where(function ($query) use ($register) {
+                if ($register != "") {
+                    $query->where('schedules.register', '=', $register);
+                }
+            })
+            ->where('schedules.register',$request->register)
+            ->with('grade_periode')
+            ->with('semester')
+            ->with('subject')
+            ->FilterSubject()
+            ->FilterSemester()
+            ->FilterGradePeriode()
+            ->get();
+        $semesters = Semester::all();
+        $gradeperiodes = GradePeriode::where('id', $request->grade_periode_id)
+            ->with('grade')
+            ->with('periode')
+            ->first();
+
+        return view('admin.absents.gradeperiode', compact('schedules', 'semesters', 'request', 'gradeperiodes'));
+    }
+
+    public function grades()
+    {
+        abort_unless(\Gate::allows('absent_access'), 403);
+
+        //default view
+        //find periode
+        $periode = Periode::where('status','active')->first();
+        $gradeperiodes = GradePeriode::where('periode_id', $periode->id)
+            ->with('grade')
+            ->with('periode')
+            ->get();
+        return view('admin.absents.grades', compact('gradeperiodes'));
+    }
 
     public function schedule(Request $request)
     {
@@ -100,30 +257,30 @@ class AbsentsController extends Controller
         return view('admin.absents.schedule', compact('schedules', 'periodes', 'semesters', 'grades'));
     }
 
-    public function presence($student_id, $register, $schedule_subject_id)
+    public function presence($student_grade_periode_id, $register, $session_id)
     {
         abort_unless(\Gate::allows('absent_create'), 403);
 
-        $absent = Absent::where('student_id', $student_id)
+        $absent = Absent::where('student_grade_periode_id', $student_grade_periode_id)
             ->where('register', $register)
-            ->where('schedule_subject_id', $schedule_subject_id)
-            ->with('student')
-            ->with('schedulesubject')
+            ->where('session_id', $session_id)
+            ->with('sessions')
+            ->with('studentgradeperiodes')
             ->first();
         if (empty($absent)) {
-            $student = Student::find($student_id);
-            $Schedule_subject = Schedule_subject::find($schedule_subject_id);
-            $subject = Subject::find($Schedule_subject->subject_id);
-            $absent['student']['name'] = $student->name;
-            $absent['schedulesubject']['subjects']['name'] = $subject->name;
+            $student_grade_periode = StudentGradePeriode::with('students')->where('id', $student_grade_periode_id)->first();
+            $sessions = Session::with('schedules')->where('id', $session_id)->first();
+            
+            $absent['studentgradeperiodes']['students']['name'] = $student_grade_periode->students->name;
+            $absent['sessions']['schedules']['subject']['name'] = $sessions->schedules->subject->name;
             $absent['presence'] = 'alpha';
             $absent['register'] = $register;
-            $absent['student_id'] = $student_id;
-            $absent['schedule_subject_id'] = $schedule_subject_id;
+            $absent['session_id'] = $session_id;
+            $absent['student_grade_periode_id'] = $student_grade_periode_id;
             $absent['description'] = '';
             //$absent = (object) $absent;
-        }        
-        $absent = json_decode (json_encode ($absent), FALSE);
+        }
+        $absent = json_decode(json_encode($absent), false);
         //dd($absent);
         return view('admin.absents.presence', compact('absent'));
     }
@@ -132,13 +289,13 @@ class AbsentsController extends Controller
     {
         abort_unless(\Gate::allows('absent_create'), 403);
 
-        $absent = Absent::where('student_id', $request->input('student_id_hidden'))
+        $absent = Absent::where('student_grade_periode_id', $request->input('student_grade_periode_id_hidden'))
             ->where('register', $request->input('register'))
-            ->where('schedule_subject_id', $request->input('schedule_subject_id_hidden'))
+            ->where('session_id', $request->input('session_id_hidden'))
             ->first();
         if (empty($absent)) {
             //create
-            $data = ['register' => $request->input('register'), 'student_id' => $request->input('student_id_hidden'), 'schedule_subject_id' => $request->input('schedule_subject_id_hidden'), 'presence' => $request->input('presence'), 'description' => $request->input('description'), 'bill' => 'unpaid', 'amount' => 0];
+            $data = ['register' => $request->input('register'), 'student_grade_periode_id' => $request->input('student_grade_periode_id_hidden'), 'session_id' => $request->input('session_id_hidden'), 'presence' => $request->input('presence'), 'description' => $request->input('description'), 'bill' => 'unpaid', 'amount' => 0];
             $absent = Absent::create($data);
         } else {
             //update
@@ -147,52 +304,49 @@ class AbsentsController extends Controller
             $absent->save();
         }
 
-        $schedule_subject = Schedule_subject::find($request->input('schedule_subject_id_hidden'));
-        $schedule = Schedule::find($schedule_subject->schedule_id);
-
-        return redirect(route("admin.absents.list",[$request->input('schedule_subject_id_hidden'),$schedule->grade_id]));
+        return redirect(route("admin.absents.list", [$request->input('session_id_hidden')]));
     }
 
-    public function bill($student_id, $register, $schedule_subject_id)
+    public function bill($student_grade_periode_id, $register, $session_id)
     {
         abort_unless(\Gate::allows('absent_create'), 403);
 
-        $absent = Absent::where('student_id', $student_id)
+        $absent = Absent::where('student_grade_periode_id', $student_grade_periode_id)
             ->where('register', $register)
-            ->where('schedule_subject_id', $schedule_subject_id)
-            ->with('student')
-            ->with('schedulesubject')
+            ->where('session_id', $session_id)
+            ->with('sessions')
+            ->with('studentgradeperiodes')
             ->first();
         if (empty($absent)) {
-            $student = Student::find($student_id);
-            $Schedule_subject = Schedule_subject::find($schedule_subject_id);
-            $subject = Subject::find($Schedule_subject->subject_id);
-            $absent['student']['name'] = $student->name;
-            $absent['schedulesubject']['subjects']['name'] = $subject->name;
+            $student_grade_periode = StudentGradePeriode::with('students')->where('id', $student_grade_periode_id)->first();
+            $sessions = Session::with('schedules')->where('id', $session_id)->first();
+            
+            $absent['studentgradeperiodes']['students']['name'] = $student_grade_periode->students->name;
+            $absent['sessions']['schedules']['subject']['name'] = $sessions->schedules->subject->name;            
+            $absent['register'] = $register;
+            $absent['session_id'] = $session_id;
+            $absent['student_grade_periode_id'] = $student_grade_periode_id;
+            $absent['description'] = '';
             $absent['bill'] = 'unpaid';
             $absent['amount'] = 0;
-            $absent['register'] = $register;
-            $absent['student_id'] = $student_id;
-            $absent['schedule_subject_id'] = $schedule_subject_id;
-            $absent['description'] = '';
             //$absent = (object) $absent;
-        }        
-        $absent = json_decode (json_encode ($absent), FALSE);
+        }
+        $absent = json_decode(json_encode($absent), false);
         //dd($absent);
-        return view('admin.absents.bill', compact('absent'));
+        return view('admin.absents.bill', compact('absent'));        
     }
 
     public function billProcess(Request $request)
     {
         abort_unless(\Gate::allows('absent_create'), 403);
 
-        $absent = Absent::where('student_id', $request->input('student_id_hidden'))
+        $absent = Absent::where('student_grade_periode_id', $request->input('student_grade_periode_id_hidden'))
             ->where('register', $request->input('register'))
-            ->where('schedule_subject_id', $request->input('schedule_subject_id_hidden'))
+            ->where('session_id', $request->input('session_id_hidden'))
             ->first();
         if (empty($absent)) {
             //create
-            $data = ['register' => $request->input('register'), 'student_id' => $request->input('student_id_hidden'), 'schedule_subject_id' => $request->input('schedule_subject_id_hidden'), 'presence' => 'alpha', 'bill' => $request->input('bill'), 'amount' => $request->input('amount')];
+            $data = ['register' => $request->input('register'), 'student_grade_periode_id' => $request->input('student_grade_periode_id_hidden'), 'session_id' => $request->input('session_id_hidden'), 'presence' => 'alpha', 'bill' => $request->input('bill'), 'amount' => $request->input('amount')];
             $absent = Absent::create($data);
         } else {
             //update
@@ -201,10 +355,7 @@ class AbsentsController extends Controller
             $absent->save();
         }
 
-        $schedule_subject = Schedule_subject::find($request->input('schedule_subject_id_hidden'));
-        $schedule = Schedule::find($schedule_subject->schedule_id);
-
-        return redirect(route("admin.absents.list",[$request->input('schedule_subject_id_hidden'),$schedule->grade_id]));
+        return redirect(route("admin.absents.list", [$request->input('session_id_hidden')]));
     }
 
     /**
@@ -212,35 +363,25 @@ class AbsentsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($id, $gid, Request $request)
+    public function index($sid, Request $request)
     {
         abort_unless(\Gate::allows('absent_access'), 403);
 
         //get input
         $presence = $request->presence;
         $register = $request->register;
-        $schedule_subject = Schedule_subject::find($id);
-        $schedule = Schedule::with('subjects')->get()->find($schedule_subject->schedule_id);
-        //return $schedule->subjects[0]['name'];
+        $session = Session::with('schedules')->where('id', $sid)->first();
 
-        if ($request->ajax()) {            
+        if ($request->ajax()) {
             //set query
-            $qry = Student::selectRaw('students.*,absents.code,absents.register,absents.presence,absents.description,absents.schedule_subject_id,absents.amount')
-                ->leftJoinSub(Absent::selectRaw('absents.*,subjects.name as subject_name')
-                ->join('schedule_subjects', 'absents.schedule_subject_id', '=', 'schedule_subjects.id')
-                ->join('subjects', 'schedule_subjects.subject_id', '=', 'subjects.id')        
-                ->where(function ($query) use ($register,$id) {
-                            if ($register != "") {
-                                $query->where('absents.register', '=', $register);
-                            }
-                            $query->where('absents.schedule_subject_id', $id);
-                        }),
+            $qry = StudentGradePeriode::selectRaw('student_grade_periode.id,student_grade_periode.student_id,absents.code,absents.register,absents.presence,absents.description,absents.session_id,absents.amount')
+                ->leftJoinSub(Absent::selectRaw('absents.*')
+                        ->where('absents.register', '=', $register),
                     'absents',
                     function ($join) {
-                        $join->on('students.id', '=', 'absents.student_id');
+                        $join->on('student_grade_periode.id', '=', 'absents.student_grade_periode_id');
                     }
                 )
-                ->where('students.grade_id', $gid)
                 ->where(function ($query) use ($presence) {
                     if ($presence == "alpha") {
                         $query->where('absents.presence', '=', $presence)
@@ -249,21 +390,24 @@ class AbsentsController extends Controller
                         $query->where('absents.presence', '=', $presence);
                     }
                 })
+                ->where('student_grade_periode.grade_periode_id', '=', $session->schedules->grade_periode_id)
+                ->with('students')
                 ->get();
             $table = Datatables::of($qry);
 
             //set def register
             $register_def = $register;
+            $session_id = $session->id;
 
             $table->addColumn('placeholder', '&nbsp;');
             $table->addColumn('actions', '&nbsp;');
 
-            $table->editColumn('actions', function ($row) use ($register_def,$id) {
+            $table->editColumn('actions', function ($row) use ($register_def, $session_id) {
                 $viewGate = 'absent_show';
                 $editGate = 'absent_edit';
                 $deleteGate = 'absent_delete';
                 $crudRoutePart = 'absents';
-                $schedule_subject_id = $id;
+                $session_id = $session_id;
 
                 return view('partials.absentsActions', compact(
                     'viewGate',
@@ -272,15 +416,15 @@ class AbsentsController extends Controller
                     'crudRoutePart',
                     'row',
                     'register_def',
-                    'schedule_subject_id'
+                    'session_id'
                 ));
             });
-            $table->editColumn('code', function ($row) use ($schedule) {
-                return $schedule->subjects[0]['name'] ? $schedule->subjects[0]['name'] : "";
+            $table->editColumn('code', function ($row) use ($session) {
+                return $session->schedules->subject['name'] ? $session->schedules->subject['name'] : "";
             });
 
             $table->editColumn('name', function ($row) {
-                return $row->name ? $row->name : "";
+                return $row->students->name ? $row->students->name : "";
             });
 
             $table->editColumn('register', function ($row) {
@@ -305,29 +449,26 @@ class AbsentsController extends Controller
             return $table->make(true);
         }
         //default view
-        $absents = Student::selectRaw('students.*,absents.code,absents.register,absents.presence,absents.description,absents.schedule_subject_id')
-                ->leftJoinSub(Absent::selectRaw('*')
-                        ->where(function ($query) use ($register,$id) {
-                            if ($register != "") {
-                                $query->where('absents.register', '=', $register);
-                            }
-                            $query->where('absents.schedule_subject_id', $id);
-                        }),
-                    'absents',
-                    function ($join) {
-                        $join->on('students.id', '=', 'absents.student_id');
-                    }
-                )
-                ->where(function ($query) use ($presence) {
-                    if ($presence == "alpha") {
-                        $query->where('absents.presence', '=', $presence)
-                            ->orWhere('absents.presence', null);
-                    } else if ($presence == "sakit" || $presence == "ijin" || $presence == "masuk") {
-                        $query->where('absents.presence', '=', $presence);
-                    }
-                })
-                ->get();
-        return view('admin.absents.index', compact('absents','id','gid'));
+        $absents = StudentGradePeriode::selectRaw('student_grade_periode.id,student_grade_periode.student_id,absents.code,absents.register,absents.presence,absents.description,absents.session_id,absents.amount')
+            ->leftJoinSub(Absent::selectRaw('absents.*')
+                    ->where('absents.register', '=', $register),
+                'absents',
+                function ($join) {
+                    $join->on('student_grade_periode.id', '=', 'absents.student_grade_periode_id');
+                }
+            )
+            ->where(function ($query) use ($presence) {
+                if ($presence == "alpha") {
+                    $query->where('absents.presence', '=', $presence)
+                        ->orWhere('absents.presence', null);
+                } else if ($presence == "sakit" || $presence == "ijin" || $presence == "masuk") {
+                    $query->where('absents.presence', '=', $presence);
+                }
+            })
+            ->where('student_grade_periode.grade_periode_id', '=', $session->schedules->grade_periode_id)
+            ->with('students')
+            ->get();
+        return view('admin.absents.index', compact('absents', 'sid'));
         //return $absents;
     }
 

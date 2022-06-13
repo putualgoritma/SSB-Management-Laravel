@@ -43,9 +43,9 @@
                             </td>
                             <td>
                                 @can('gradeperiode_show')                                    
-                                    <a class="btn btn-xs btn-success" href="{{ route('admin.schedules.gradePeriodes', ['grade_periode_id'=>$gradeperiode->id]) }}">
+                                    <a class="btn btn-xs btn-success" href="{{ route('admin.absents.gradePeriodes', ['grade_periode_id'=>$gradeperiode->id]) }}">
                                     {{ trans('global.schedule.title') }}
-                                    </a>
+                                    </a>                                    
                                 @endcan
                             </td>
                         </tr>

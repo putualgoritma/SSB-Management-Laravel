@@ -17,29 +17,14 @@
                         {{ $errors->first('code') }}
                     </em>
                 @endif
-            </div>
-            
-            <div class="form-group {{ $errors->has('periode_id') ? 'has-error' : '' }}">
-                <label for="periode_id">{{ trans('global.schedule.fields.periode_id') }}*</label>
-                <select id="periode_id" name="periode_id" class="form-control" value="{{ old('periode_id', isset($schedule) ? $schedule->periode_id : '') }}">
-                <option value="0">--Pilih Periode--</option>
-                @foreach($periodes as $periode)
-                <option value="{{$periode->id}}">{{ $periode->periode}}</option>
-                @endforeach
-                 </select>
-                </select>
-                @if($errors->has('periode_id'))
-                    <em class="invalid-feedback">
-                        {{ $errors->first('periode_id') }}
-                    </em>
-                @endif
+                <input type="hidden" id="grade_periode_id" name="grade_periode_id" value="{{ $request->grade_periode_id }}">
             </div>
             <div class="form-group {{ $errors->has('semester_id') ? 'has-error' : '' }}">
                 <label for="semester_id">{{ trans('global.schedule.fields.semester_id') }}*</label>
                 <select id="semester_id" name="semester_id" class="form-control" value="{{ old('semester_id', isset($schedule) ? $schedule->semester_id : '') }}">
                 <option value="0">--Pilih Semester--</option>
                 @foreach($semesters as $semester)
-                <option value="{{$semester->id}}">{{ $semester->name}}</option>
+                <option value="{{$semester->id}}" {{$request->semester == $semester->id ? 'selected' : ''}}>{{ $semester->name}}</option>
                 @endforeach
                  </select>
                 </select>
@@ -48,33 +33,18 @@
                         {{ $errors->first('semester') }}
                     </em>
                 @endif
-            </div>            
-            <div class="form-group {{ $errors->has('grade_id') ? 'has-error' : '' }}">
-                <label for="grade_id">{{ trans('global.schedule.fields.grade_id') }}*</label>
-                <select id="grade_id" name="grade_id" class="form-control" value="{{ old('grade_id', isset($schedule) ? $schedule->grade_id : '') }}">
-                <option value="0">--Pilih Kelas--</option>
-                @foreach($grades as $grade)
-                <option value="{{$grade->id}}">{{ $grade->name}}</option>
-                @endforeach
-                 </select>
-                </select>
-                @if($errors->has('grade'))
-                    <em class="invalid-feedback">
-                        {{ $errors->first('grade') }}
-                    </em>
-                @endif
             </div>
             <div class="form-group {{ $errors->has('register') ? 'has-error' : '' }}">
                 <label for="register">{{ trans('global.schedule.fields.register') }}*</label>
                 <select id="register" name="register" class="form-control" value="{{ old('register', isset($schedule) ? $schedule->register : '') }}">
-                    <option value="">--Pilih Hari--</option>
-                    <option value="Sunday">Minggu</option>
-                    <option value="Monday">Senin</option>
-                    <option value="Tuesday">Selasa</option>
-                    <option value="Wednesday">Rabu</option>
-                    <option value="Thursday">Kamis</option>
-                    <option value="Friday">Jumat</option>
-                    <option value="Saturday">Sabtu</option>
+                    <option value="" {{$request->register == "" ? 'selected' : ''}}>--Pilih Hari--</option>
+                    <option value="Sunday" {{$request->register == "Sunday" ? 'selected' : ''}}>Minggu</option>
+                    <option value="Monday" {{$request->register == "Monday" ? 'selected' : ''}}>Senin</option>
+                    <option value="Tuesday" {{$request->register == "Tuesday" ? 'selected' : ''}}>Selasa</option>
+                    <option value="Wednesday" {{$request->register == "Wednesday" ? 'selected' : ''}}>Rabu</option>
+                    <option value="Thursday" {{$request->register == "Thursday" ? 'selected' : ''}}>Kamis</option>
+                    <option value="Friday" {{$request->register == "Friday" ? 'selected' : ''}}>Jumat</option>
+                    <option value="Saturday" {{$request->register == "Saturday" ? 'selected' : ''}}>Sabtu</option>
                 </select>
                 @if($errors->has('register'))
                     <em class="invalid-feedback">
@@ -82,34 +52,57 @@
                     </em>
                 @endif
             </div>
+            <div class="form-group {{ $errors->has('subject_id') ? 'has-error' : '' }}">
+                <label for="subject_id">{{ trans('global.schedule.fields.subject_id') }}*</label>
+                <select id="subject_id" name="subject_id" class="form-control" value="{{ old('subject_id', isset($schedule) ? $schedule->subject_id : '') }}">
+                <option value="0">--Pilih subject--</option>
+                @foreach($subjects as $subject)
+                <option value="{{$subject->id}}" {{$request->subject == $subject->id ? 'selected' : ''}}>{{ $subject->name}}</option>
+                @endforeach
+                 </select>
+                </select>
+                @if($errors->has('subject'))
+                    <em class="invalid-feedback">
+                        {{ $errors->first('subject') }}
+                    </em>
+                @endif
+            </div>
+            <div class="form-group {{ $errors->has('start') ? 'has-error' : '' }}">
+                <label for="start">{{ trans('global.schedule.fields.start') }}*</label>
+                <input type="time" id="start" name="start" class="form-control" value="{{ old('start', isset($schedule) ? $schedule->start : '') }}">
+                @if($errors->has('start'))
+                    <em class="invalid-feedback">
+                        {{ $errors->first('start') }}
+                    </em>
+                @endif
+            </div>
+            <div class="form-group {{ $errors->has('end') ? 'has-error' : '' }}">
+                <label for="end">{{ trans('global.schedule.fields.end') }}*</label>
+                <input type="time" id="end" name="end" class="form-control" value="{{ old('end', isset($schedule) ? $schedule->end : '') }}">
+                @if($errors->has('end'))
+                    <em class="invalid-feedback">
+                        {{ $errors->first('end') }}
+                    </em>
+                @endif
+            </div>
             <div class="card">
                 <div class="card-header">
-                    Jadwal Mata Pelajaran
+                    Pilih Guru
                 </div>
 
                 <div class="card-body">
-                    <table class="table" id="subjects_table">
+                    <table class="table" id="teachers_table">
                         <thead>
                             <tr>
-                                <th>Mata Pelajaran</th>
                                 <th>Guru</th>
-                                <th>Mulai</th>
-                                <th>Berakhir</th>
+                                <th>Posisi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (old('subjects', ['']) as $index => $oldSubject)
-                                <tr id="subject{{ $index }}">
-                                <td>
-                                        <select name="subject_id[]" class="form-control subject_list">
-                                            <option value="">-- Pilih Mata Pelajaran --</option>
-                                            @foreach ($subjects as $subject)
-                                            <option value="{{$subject->id}}">{{ $subject->name}}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
+                            @foreach (old('teachers', ['']) as $index => $oldTeacher)
+                                <tr id="teacher{{ $index }}">
                                     <td>
-                                        <select name="teacher_id[]" class="form-control subject_list">
+                                        <select name="teachers[]" class="form-control teacher_list">
                                             <option value="">-- Pilih Guru --</option>
                                             @foreach ($teachers as $teacher)
                                             <option value="{{$teacher->id}}">{{ $teacher->name}}</option>
@@ -117,14 +110,15 @@
                                         </select>
                                     </td>
                                     <td>
-                                    <input type="time" id="start" name="start[]" class="form-control" value="{{ old('start', isset($schedule) ? $schedule->start : '') }}">
-                                    </td>
-                                    <td>
-                                    <input type="time" id="end" name="end[]" class="form-control" value="{{ old('end', isset($schedule) ? $schedule->end : '') }}">
+                                        <select name="positions[]" class="form-control position_list">
+                                            <option value="">-- Pilih Posisi --</option>
+                                            <option value="head">Utama</option>
+                                            <option value="assistant">Asisten</option>
+                                        </select>
                                     </td>
                                 </tr>
                             @endforeach
-                            <tr id="subject{{ count(old('subjects', [''])) }}"></tr>
+                            <tr id="teacher{{ count(old('teachers', [''])) }}"></tr>
                         </tbody>
                     </table>
 
@@ -147,21 +141,22 @@
 @section('scripts')
 <script>
   $(document).ready(function(){
-    let row_number = {{ count(old('subjects', [''])) }};
+    let row_number = {{ count(old('teachers', [''])) }};
     $("#add_row").click(function(e){
       e.preventDefault();
       let new_row_number = row_number - 1;
-      $('#subject' + row_number).html($('#subject' + new_row_number).html()).find('td:first-child');
-      $('#subjects_table').append('<tr id="subject' + (row_number + 1) + '"></tr>');
+      $('#teacher' + row_number).html($('#teacher' + new_row_number).html()).find('td:first-child');
+      $('#teachers_table').append('<tr id="teacher' + (row_number + 1) + '"></tr>');
       row_number++;
     });
-});
+
     $("#delete_row").click(function(e){
       e.preventDefault();
       if(row_number > 1){
-        $("#subject" + (row_number - 1)).html('');
+        $("#teacher" + (row_number - 1)).html('');
         row_number--;
       }
     });
+});
     </script>
 @endsection

@@ -6,17 +6,18 @@ use App\Bill;
 use App\Grade;
 use App\Http\Controllers\Controller;
 use App\Student;
+use App\StudentGradePeriode;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
 
 class BillsController extends Controller
 {
-    public function paid($student_id, $periode)
+    public function paid($student_grade_periode_id, $periode)
     {
         abort_unless(\Gate::allows('bill_create'), 403);
 
-        $bill = Bill::where('student_id', $student_id)
+        $bill = Bill::where('student_grade_periode_id', $student_grade_periode_id)
             ->where('periode', $periode)
             ->first();
         if (empty($bill)) {
@@ -27,8 +28,10 @@ class BillsController extends Controller
             $bill = (object) $bill;
         }
 
-        $student = Student::find($student_id);
-        return view('admin.bills.paid', compact('student', 'periode', 'bill'));
+        $student_grade_periode = StudentGradePeriode::where('id', $student_grade_periode_id)
+        ->with('students')
+        ->first();
+        return view('admin.bills.paid', compact('student_grade_periode', 'periode', 'bill'));
     }
 
     public function paidProcess(Request $request)
@@ -40,15 +43,13 @@ class BillsController extends Controller
         if ($request->has('status')) {
             $status = 'paid';
         }
-        //get student class
-        $student = Student::find($request->input('student_id'));
         //check if data not exist
-        $bill = Bill::where('student_id', $request->input('student_id'))
+        $bill = Bill::where('student_grade_periode_id', $request->input('student_grade_periode_id'))
             ->where('periode', $request->input('periode'))
             ->first();
         if (empty($bill)) {
             //create
-            $data = ['register' => $request->input('register'), 'code' => $request->input('code'), 'periode' => $request->input('periode'), 'student_id' => $request->input('student_id'), 'amount' => $request->input('amount'), 'status' => $status];
+            $data = ['register' => $request->input('register'), 'code' => $request->input('code'), 'periode' => $request->input('periode'), 'student_grade_periode_id' => $request->input('student_grade_periode_id'), 'amount' => $request->input('amount'), 'status' => $status];
             $bill = Bill::create($data);
         } else {
             //update
@@ -59,7 +60,11 @@ class BillsController extends Controller
             $bill->save();
         }
 
-        return redirect(route("admin.bills.index")."?period=".$request->input('periode')."&status-filter="."&grade=".$student->grade_id);
+        $student_grade_periode = StudentGradePeriode::where('id', $request->input('student_grade_periode_id'))
+        ->with('grade_periode')
+        ->first();
+
+        return redirect(route("admin.bills.index") . "?period=" . $request->input('periode') . "&status-filter=" . "&grade=" . $student_grade_periode->grade_periode->grade->id);
     }
 
     /**
@@ -75,9 +80,11 @@ class BillsController extends Controller
             //get input
             $status = $request->status;
             $period = $request->period;
+            $grade = $request->grade;
             //set query
-            $qry = Student::selectRaw('students.*,bills.code,bills.register,bills.status,bills.periode,bills.amount')
-                ->leftJoinSub(Bill::selectRaw('*')
+            $qry = StudentGradePeriode::selectRaw('student_grade_periode.id,student_grade_periode.student_id,student_grade_periode.grade_periode_id,bills.code,bills.register,bills.status,bills.periode,bills.amount')
+                ->join('grade_periode', 'student_grade_periode.grade_periode_id', '=', 'grade_periode.id')
+                ->leftJoinSub(Bill::selectRaw('bills.*')
                         ->where(function ($query) use ($period) {
                             if ($period != "") {
                                 $query->where('bills.periode', '=', $period);
@@ -85,18 +92,23 @@ class BillsController extends Controller
                         }),
                     'bills',
                     function ($join) {
-                        $join->on('students.id', '=', 'bills.student_id');
+                        $join->on('student_grade_periode.id', '=', 'bills.student_grade_periode_id');
                     }
-                )                
+                )
                 ->where(function ($query) use ($status) {
                     if ($status == "unpaid") {
                         $query->where('bills.status', '=', $status)
                             ->orWhere('bills.status', null);
-                    }else if ($status == "paid") {
+                    } else if ($status == "paid") {
                         $query->where('bills.status', '=', $status);
                     }
                 })
-                ->FilterGrade()
+                ->where(function ($query) use ($grade) {
+                    if ($grade != "") {
+                        $query->where('grade_periode.grade_id', '=', $grade);
+                    }
+                })
+                ->with('students')
                 ->get();
             $table = Datatables::of($qry);
 
@@ -126,7 +138,7 @@ class BillsController extends Controller
             });
 
             $table->editColumn('name', function ($row) {
-                return $row->name ? $row->name : "";
+                return $row->students->name ? $row->students->name : "";
             });
 
             $table->editColumn('periode', function ($row) {

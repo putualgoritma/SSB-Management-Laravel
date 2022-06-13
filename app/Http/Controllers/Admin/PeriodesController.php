@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePeriodeRequest;
 use App\Http\Requests\UpdatePeriodeRequest;
 use App\Periode;
+use Illuminate\Http\Request;
 
 class PeriodesController extends Controller
 {
@@ -43,7 +43,7 @@ class PeriodesController extends Controller
     {
         abort_unless(\Gate::allows('periode_create'), 403);
         $periode = Periode::create($request->all());
-    
+
         return redirect()->route('admin.periodes.index');
     }
 
@@ -56,7 +56,7 @@ class PeriodesController extends Controller
     public function show(Periode $periode)
     {
         abort_unless(\Gate::allows('periode_show'), 403);
-        return view('admin.periodes.show', compact('periode')); 
+        return view('admin.periodes.show', compact('periode'));
     }
 
     /**
@@ -68,7 +68,7 @@ class PeriodesController extends Controller
     public function edit(Periode $periode)
     {
         abort_unless(\Gate::allows('periode_edit'), 403);
-        return view('admin.periodes.edit', compact('periode')); 
+        return view('admin.periodes.edit', compact('periode'));
     }
 
     /**
@@ -80,8 +80,12 @@ class PeriodesController extends Controller
      */
     public function update(UpdatePeriodeRequest $request, Periode $periode)
     {
-        abort_unless(\Gate::allows('periode_edit'), 403);
+        abort_unless(\Gate::allows('periode_edit'), 403);        
         $periode->update($request->all());
+        if ($request->status == 'active') {
+            //Periode::query()->update(['status' => 'close']);
+            Periode::where('id','!=', $periode->id)->update(['status' => 'close']);
+        }
         return redirect()->route('admin.periodes.index');
     }
 

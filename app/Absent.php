@@ -8,18 +8,17 @@ class Absent extends Model
 {
     protected $fillable = [
         'register',
-        'student_id',
-        'schedule_subject_id',
+        'session_id',
+        'student_grade_periode_id',
         'presence',
         'description',
         'bill',
         'amount',
     ];
-    function schedulesubject(){
-        //return $this->belongsTo('App\Schedule_subject');
-        return $this->belongsTo(Schedule_subject::class, 'schedule_subject_id')->with('subjects')->select('id','subject_id');
+    function sessions(){
+        return $this->belongsTo(Session::class, 'session_id')->with('schedules')->select('id','schedule_id');
     }
-    function student(){
-        return $this->belongsTo('App\Student')->select('id', 'code', 'name');
+    function studentgradeperiodes(){
+        return $this->belongsTo(StudentGradePeriode::class, 'student_grade_periode_id')->with('students')->select('id','student_id');
     }
 }

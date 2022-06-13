@@ -10,7 +10,6 @@ use App\Student;
 use App\StudentGradePeriode;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Database\QueryException;
 
 class GradePeriodesController extends Controller
 {
@@ -25,10 +24,10 @@ class GradePeriodesController extends Controller
 
         //default view
         $gradeperiodes = GradePeriode::FilterPeriode()
-                ->with('periode')
-                ->get();
-        $periodes = Periode::all();
-        return view('admin.gradeperiodes.index', compact('gradeperiodes','periodes'));
+            ->with('periode')
+            ->get();
+        $periode = Periode::where('id', $request->periode)->first();
+        return view('admin.gradeperiodes.index', compact('gradeperiodes', 'periode'));
     }
 
     public function indexAjax(Request $request)
@@ -82,12 +81,13 @@ class GradePeriodesController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Request $request)
     {
         abort_unless(\Gate::allows('gradeperiode_create'), 403);
         $periodes = Periode::all();
         $grades = Grade::all();
-        return view('admin.gradeperiodes.create', compact('grades', 'periodes'));
+        $periode = Periode::where('id', $request->periode)->first();
+        return view('admin.gradeperiodes.create', compact('grades', 'periodes', 'periode'));
     }
 
     /**
@@ -99,9 +99,17 @@ class GradePeriodesController extends Controller
     public function store(Request $request)
     {
         abort_unless(\Gate::allows('gradeperiode_create'), 403);
-        $gradeperiode = GradePeriode::create($request->all());
-
-        return redirect()->route('admin.gradeperiodes.index');
+        //check if already exist
+        //return $request;
+        $gradeperiode_exist = GradePeriode::where('periode_id', $request->periode_id)->where('grade_id', $request->grade_id)->get();
+        if (count($gradeperiode_exist) == 0) {
+            $gradeperiode = GradePeriode::create($request->all());
+        }
+        if ($request->periode > 0) {
+            return redirect()->route('admin.gradeperiodes.index', ['periode' => $request->periode]);
+        } else {
+            return redirect()->route('admin.gradeperiodes.index');
+        }
     }
 
     /**
@@ -223,6 +231,6 @@ class GradePeriodesController extends Controller
         $studentgradeperiode = StudentGradePeriode::find($request->_id);
         // return $studentgradeperiode;
         $studentgradeperiode->delete();
-        return back();        
+        return back();
     }
 }
